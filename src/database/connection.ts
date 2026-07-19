@@ -11,14 +11,12 @@ export class Database {
       port: parseInt(process.env.DB_PORT || '5432'),
       database: process.env.DB_NAME || 'merlin_db',
       user: process.env.DB_USER || 'merlin_user',
-      password: process.env.DB_PASSWORD || 'secure_password',
+      password: process.env.DB_PASSWORD || 'secure_password'
     });
   }
 
   public static getInstance(): Database {
-    if (!Database.instance) {
-      Database.instance = new Database();
-    }
+    if (!Database.instance) Database.instance = new Database();
     return Database.instance;
   }
 
@@ -35,8 +33,7 @@ export class Database {
 
   public async query(text: string, params?: unknown[]): Promise<any> {
     try {
-      const result = await this.pool.query(text, params);
-      return result;
+      return await this.pool.query(text, params);
     } catch (error) {
       logger.error('Database query failed:', error);
       throw error;
