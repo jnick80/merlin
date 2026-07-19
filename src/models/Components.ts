@@ -1,4 +1,3 @@
-// Identity
 export interface Identity {
   id: string;
   entityId: string;
@@ -8,7 +7,6 @@ export interface Identity {
   createdAt: Date;
 }
 
-// State
 export interface State {
   id: string;
   entityId: string;
@@ -18,7 +16,6 @@ export interface State {
   updatedAt: Date;
 }
 
-// Facts
 export interface Fact {
   id: string;
   entityId: string;
@@ -30,7 +27,6 @@ export interface Fact {
   updatedAt: Date;
 }
 
-// Intelligence
 export interface Intelligence {
   id: string;
   entityId: string;
@@ -40,7 +36,6 @@ export interface Intelligence {
   createdAt: Date;
 }
 
-// Assets
 export interface Asset {
   id: string;
   entityId: string;
@@ -51,7 +46,6 @@ export interface Asset {
   updatedAt: Date;
 }
 
-// Operations
 export interface Operation {
   id: string;
   entityId: string;
@@ -62,7 +56,6 @@ export interface Operation {
   completedAt?: Date;
 }
 
-// Performance
 export interface PerformanceMetric {
   id: string;
   entityId: string;
@@ -73,7 +66,6 @@ export interface PerformanceMetric {
   createdAt: Date;
 }
 
-// Relationships
 export interface Relationship {
   id: string;
   sourceEntityId: string;
@@ -84,7 +76,6 @@ export interface Relationship {
   updatedAt: Date;
 }
 
-// History
 export interface HistoryEvent {
   id: string;
   entityId: string;
@@ -94,7 +85,6 @@ export interface HistoryEvent {
   createdAt: Date;
 }
 
-// Automation
 export interface Automation {
   id: string;
   entityId: string;
