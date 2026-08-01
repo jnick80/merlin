@@ -19,15 +19,27 @@ services:
       retries: 5
 
   app:
-    build: .
+    build:
+      context: .
+      target: development
     container_name: merlin_app
     environment:
+      APP_NAME: merlin-business-os
       NODE_ENV: development
+      PORT: 3000
+      API_VERSION: v1
+      API_BASE_URL: http://localhost:3000/api
+      CORS_ORIGIN: http://localhost:3000
+      LOG_LEVEL: info
+      LOG_FORMAT: pretty
+      LOG_TO_FILES: 'false'
+      LOG_DIR: logs
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: merlin_db
       DB_USER: merlin_user
       DB_PASSWORD: secure_password
+      JWT_SECRET: development-secret-key
       PLATFORM_EXECUTOR: local-simulated
     ports:
       - '3000:3000'

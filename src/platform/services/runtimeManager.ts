@@ -4,8 +4,11 @@ import {
   RuntimeInstance,
   RuntimeStatus,
   StopRuntimeInput,
-  Workload
+  Workload,
 } from '../types';
+import { createSectionLogger } from '../../utils/logger';
+
+const runtimeLogger = createSectionLogger('runtime');
 
 export interface RuntimeRepository {
   createRuntimeInstance(input: {
@@ -58,8 +61,15 @@ export class LocalRuntimeManager implements ExecutionManager {
       reason: input.reason ?? 'Manual launch request',
       launchConfig: input.launchConfig ?? {},
       requestedBy: input.requestedBy ?? input.ownerId,
-      requestedAt: new Date().toISOString()
+      requestedAt: new Date().toISOString(),
     };
+
+    runtimeLogger.info('Runtime launch requested', {
+      workloadId: workload.id,
+      ownerId: input.ownerId,
+      template: workload.template,
+      requestedBy: launchRequest.requestedBy,
+    });
 
     const runtime = await this.runtimeRepository.createRuntimeInstance({
       workload,
@@ -72,12 +82,22 @@ export class LocalRuntimeManager implements ExecutionManager {
         sandboxKind: 'microvm-like',
         sandboxBoundary: 'out-of-process target planned; API process does not execute tenant code',
         desiredImage: workload.desiredImage,
-        workloadConfig: workload.config
-      }
+        workloadConfig: workload.config,
+      },
     });
 
-    await this.runtimeRepository.appendRuntimeHistory(runtime.id, 'runtime.launch.requested', launchRequest, input.requestedBy);
-    await this.runtimeRepository.appendRuntimeLog(runtime.id, 'info', 'Launch request accepted by local simulated executor.', launchRequest);
+    await this.runtimeRepository.appendRuntimeHistory(
+      runtime.id,
+      'runtime.launch.requested',
+      launchRequest,
+      input.requestedBy
+    );
+    await this.runtimeRepository.appendRuntimeLog(
+      runtime.id,
+      'info',
+      'Launch request accepted by local simulated executor.',
+      launchRequest
+    );
 
     await this.runtimeRepository.updateRuntimeState(runtime.id, {
       status: 'provisioning',
@@ -85,8 +105,14 @@ export class LocalRuntimeManager implements ExecutionManager {
       assignedNode: 'local-dev-host',
       runtimeMetadata: {
         ...runtime.runtimeMetadata,
-        provisioningStage: 'template-validated'
-      }
+        provisioningStage: 'template-validated',
+      },
+    });
+    runtimeLogger.info('Runtime provisioning started', {
+      runtimeId: runtime.id,
+      workloadId: workload.id,
+      ownerId: input.ownerId,
+      template: workload.template,
     });
     await this.runtimeRepository.appendRuntimeHistory(
       runtime.id,
@@ -108,17 +134,23 @@ export class LocalRuntimeManager implements ExecutionManager {
       runtimeMetadata: {
         ...runtime.runtimeMetadata,
         provisioningStage: 'running',
-        networkExposureApproved: false
-      }
+        networkExposureApproved: false,
+      },
     });
 
+    runtimeLogger.info('Runtime entered running state', {
+      runtimeId: runtime.id,
+      workloadId: workload.id,
+      ownerId: input.ownerId,
+      executionModel: 'simulated-microvm',
+    });
     await this.runtimeRepository.appendRuntimeHistory(
       runtime.id,
       'runtime.running',
       {
         healthStatus: 'healthy',
         executionModel: 'simulated-microvm',
-        note: 'Tenant software execution is intentionally not performed in the API process.'
+        note: 'Tenant software execution is intentionally not performed in the API process.',
       },
       input.requestedBy
     );
@@ -131,7 +163,11 @@ export class LocalRuntimeManager implements ExecutionManager {
     return runningRuntime;
   }
 
-  public async stop(runtimeId: string, input: StopRuntimeInput, ownerId?: string): Promise<RuntimeInstance> {
+  public async stop(
+    runtimeId: string,
+    input: StopRuntimeInput,
+    ownerId?: string
+  ): Promise<RuntimeInstance> {
     const runtime = await this.requireRuntime(runtimeId, ownerId);
 
     if (runtime.status === 'deleted') {
@@ -139,16 +175,27 @@ export class LocalRuntimeManager implements ExecutionManager {
     }
 
     if (runtime.status === 'stopped') {
+      runtimeLogger.info('Runtime stop skipped because runtime is already stopped', {
+        runtimeId,
+        ownerId: ownerId ?? runtime.ownerId,
+      });
       return runtime;
     }
+
+    runtimeLogger.warn('Runtime stop requested', {
+      runtimeId,
+      ownerId: ownerId ?? runtime.ownerId,
+      requestedBy: input.requestedBy ?? null,
+      reason: input.reason ?? 'Manual stop request',
+    });
 
     await this.runtimeRepository.updateRuntimeState(runtime.id, {
       status: 'stopping',
       healthStatus: runtime.healthStatus,
       runtimeMetadata: {
         ...runtime.runtimeMetadata,
-        stopReason: input.reason ?? 'Manual stop request'
-      }
+        stopReason: input.reason ?? 'Manual stop request',
+      },
     });
     await this.runtimeRepository.appendRuntimeHistory(
       runtime.id,
@@ -157,7 +204,7 @@ export class LocalRuntimeManager implements ExecutionManager {
       input.requestedBy
     );
     await this.runtimeRepository.appendRuntimeLog(runtime.id, 'warn', 'Runtime stop initiated.', {
-      requestedBy: input.requestedBy ?? null
+      requestedBy: input.requestedBy ?? null,
     });
 
     const stoppedRuntime = await this.runtimeRepository.updateRuntimeState(runtime.id, {
@@ -166,8 +213,14 @@ export class LocalRuntimeManager implements ExecutionManager {
       stoppedAt: new Date(),
       runtimeMetadata: {
         ...runtime.runtimeMetadata,
-        lastStopReason: input.reason ?? 'Manual stop request'
-      }
+        lastStopReason: input.reason ?? 'Manual stop request',
+      },
+    });
+    runtimeLogger.info('Runtime stopped cleanly', {
+      runtimeId,
+      ownerId: ownerId ?? runtime.ownerId,
+      requestedBy: input.requestedBy ?? null,
+      reason: input.reason ?? 'Manual stop request',
     });
     await this.runtimeRepository.appendRuntimeHistory(
       runtime.id,
@@ -180,10 +233,19 @@ export class LocalRuntimeManager implements ExecutionManager {
     return stoppedRuntime;
   }
 
-  public async remove(runtimeId: string, requestedBy?: string, ownerId?: string): Promise<RuntimeInstance> {
+  public async remove(
+    runtimeId: string,
+    requestedBy?: string,
+    ownerId?: string
+  ): Promise<RuntimeInstance> {
     const runtime = await this.requireRuntime(runtimeId, ownerId);
 
-    if (runtime.status === 'running' || runtime.status === 'provisioning' || runtime.status === 'pending' || runtime.status === 'stopping') {
+    if (
+      runtime.status === 'running' ||
+      runtime.status === 'provisioning' ||
+      runtime.status === 'pending' ||
+      runtime.status === 'stopping'
+    ) {
       throw new Error('Runtime must be stopped before deletion.');
     }
 
@@ -193,11 +255,21 @@ export class LocalRuntimeManager implements ExecutionManager {
       deletedAt: new Date(),
       runtimeMetadata: {
         ...runtime.runtimeMetadata,
-        deleted: true
-      }
+        deleted: true,
+      },
     });
 
-    await this.runtimeRepository.appendRuntimeHistory(runtime.id, 'runtime.deleted', { deleted: true }, requestedBy);
+    runtimeLogger.info('Runtime marked as deleted', {
+      runtimeId,
+      ownerId: ownerId ?? runtime.ownerId,
+      requestedBy: requestedBy ?? null,
+    });
+    await this.runtimeRepository.appendRuntimeHistory(
+      runtime.id,
+      'runtime.deleted',
+      { deleted: true },
+      requestedBy
+    );
     await this.runtimeRepository.appendRuntimeLog(runtime.id, 'info', 'Runtime marked as deleted.');
 
     return deletedRuntime;
@@ -207,6 +279,7 @@ export class LocalRuntimeManager implements ExecutionManager {
     const runtime = await this.runtimeRepository.getRuntimeById(runtimeId, ownerId);
 
     if (!runtime) {
+      runtimeLogger.error('Runtime lookup failed', { runtimeId, ownerId: ownerId ?? null });
       throw new Error('Runtime not found.');
     }
 

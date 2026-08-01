@@ -1,23 +1,24 @@
-import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
+import express, { Express, Request, Response } from 'express';
 import helmet from 'helmet';
-import dotenv from 'dotenv';
-import { logger } from './utils/logger';
+import { v1Router } from './api/v1';
+import { env, allowedOrigins } from './config/env';
+import { Database } from './database/connection';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
-import { Database } from './database/connection';
-import { v1Router } from './api/v1';
+import { createSectionLogger } from './utils/logger';
 
-dotenv.config();
-
-const PORT = process.env.PORT || 3000;
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+const startupLogger = createSectionLogger('startup');
+const appLogger = createSectionLogger('app');
 
 export const createApp = (): Express => {
   const app: Express = express();
+
+  appLogger.info('Configuring Express application', {
+    apiVersion: env.API_VERSION,
+    corsOrigins: allowedOrigins,
+    executor: env.PLATFORM_EXECUTOR,
+  });
 
   app.use(helmet());
   app.use(
@@ -29,21 +30,27 @@ export const createApp = (): Express => {
         }
 
         callback(new Error('Origin not allowed by CORS policy.'));
-      }
+      },
     })
   );
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(requestLogger);
 
-  app.get('/health', (req: Request, res: Response) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  app.get('/health', (_req: Request, res: Response) => {
+    res.json({
+      status: 'ok',
+      service: env.APP_NAME,
+      version: env.API_VERSION,
+      executor: env.PLATFORM_EXECUTOR,
+      timestamp: new Date().toISOString(),
+    });
   });
 
-  app.use('/api/v1', v1Router);
+  app.use(`/api/${env.API_VERSION}`, v1Router);
 
   app.use((req: Request, res: Response) => {
-    res.status(404).json({ error: 'Not Found', path: req.path });
+    res.status(404).json({ error: 'Not Found', path: req.path, requestId: req.requestId });
   });
 
   app.use(errorHandler);
@@ -53,15 +60,30 @@ export const createApp = (): Express => {
 
 const startServer = async (): Promise<void> => {
   try {
+    startupLogger.info('Starting service', {
+      nodeEnv: env.NODE_ENV,
+      port: env.PORT,
+      executor: env.PLATFORM_EXECUTOR,
+    });
+
     const db = Database.getInstance();
     await db.connect();
-    logger.info('Database connected successfully');
+    startupLogger.info('Database connected successfully', {
+      host: env.DB_HOST,
+      database: env.DB_NAME,
+      port: env.DB_PORT,
+    });
+
     const app = createApp();
-    app.listen(PORT, () => {
-      logger.info(`Merlin Business OS running on port ${PORT}`);
+    app.listen(env.PORT, () => {
+      startupLogger.info('Service listening', {
+        port: env.PORT,
+        apiBaseUrl: env.API_BASE_URL,
+        apiVersion: env.API_VERSION,
+      });
     });
   } catch (error) {
-    logger.error('Failed to start server:', error);
+    startupLogger.error('Failed to start service', { error });
     process.exit(1);
   }
 };
