@@ -12,9 +12,9 @@ export const runtimeTemplates: RuntimeTemplate[] = [
       cpuUnits: 256,
       memoryMb: 512,
       rootFilesystem: 'read-only',
-      networkPolicy: 'isolated'
-    }
-  }
+      networkPolicy: 'isolated',
+    },
+  },
 ];
 
 export const getRuntimeTemplate = (templateId: string): RuntimeTemplate | undefined =>

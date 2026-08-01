@@ -14,7 +14,7 @@ const buildWorkload = (): Workload => ({
   networkExposed: false,
   resourcePolicy: { maxMemoryMb: 512 },
   createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString()
+  updatedAt: new Date().toISOString(),
 });
 
 const buildRuntime = (): RuntimeInstance => ({
@@ -34,7 +34,7 @@ const buildRuntime = (): RuntimeInstance => ({
   updatedAt: new Date().toISOString(),
   startedAt: null,
   stoppedAt: null,
-  deletedAt: null
+  deletedAt: null,
 });
 
 const createRepository = (): jest.Mocked<RuntimeRepository> => ({
@@ -43,7 +43,7 @@ const createRepository = (): jest.Mocked<RuntimeRepository> => ({
   listRuntimes: jest.fn(),
   updateRuntimeState: jest.fn(),
   appendRuntimeHistory: jest.fn(),
-  appendRuntimeLog: jest.fn()
+  appendRuntimeLog: jest.fn(),
 });
 
 describe('LocalRuntimeManager', () => {
@@ -55,7 +55,7 @@ describe('LocalRuntimeManager', () => {
       ...createdRuntime,
       status: 'running',
       healthStatus: 'healthy',
-      startedAt: new Date().toISOString()
+      startedAt: new Date().toISOString(),
     };
 
     repository.createRuntimeInstance.mockResolvedValue(createdRuntime);
@@ -63,7 +63,10 @@ describe('LocalRuntimeManager', () => {
       .mockResolvedValueOnce({ ...createdRuntime, status: 'provisioning' })
       .mockResolvedValueOnce(runningRuntime);
 
-    const runtime = await manager.launch(buildWorkload(), { ownerId: 'tenant-a', requestedBy: 'ops-user' });
+    const runtime = await manager.launch(buildWorkload(), {
+      ownerId: 'tenant-a',
+      requestedBy: 'ops-user',
+    });
 
     expect(runtime.status).toBe('running');
     expect(repository.createRuntimeInstance).toHaveBeenCalledTimes(1);
@@ -79,12 +82,16 @@ describe('LocalRuntimeManager', () => {
   it('stops a running runtime and records stop transitions', async () => {
     const repository = createRepository();
     const manager = new LocalRuntimeManager(repository);
-    const runningRuntime: RuntimeInstance = { ...buildRuntime(), status: 'running', healthStatus: 'healthy' };
+    const runningRuntime: RuntimeInstance = {
+      ...buildRuntime(),
+      status: 'running',
+      healthStatus: 'healthy',
+    };
     const stoppedRuntime: RuntimeInstance = {
       ...runningRuntime,
       status: 'stopped',
       healthStatus: 'unknown',
-      stoppedAt: new Date().toISOString()
+      stoppedAt: new Date().toISOString(),
     };
 
     repository.getRuntimeById.mockResolvedValue(runningRuntime);
@@ -92,7 +99,11 @@ describe('LocalRuntimeManager', () => {
       .mockResolvedValueOnce({ ...runningRuntime, status: 'stopping' })
       .mockResolvedValueOnce(stoppedRuntime);
 
-    const runtime = await manager.stop('runtime-1', { requestedBy: 'ops-user', reason: 'maintenance' }, 'tenant-a');
+    const runtime = await manager.stop(
+      'runtime-1',
+      { requestedBy: 'ops-user', reason: 'maintenance' },
+      'tenant-a'
+    );
 
     expect(runtime.status).toBe('stopped');
     expect(repository.appendRuntimeHistory).toHaveBeenCalledWith(
@@ -108,6 +119,8 @@ describe('LocalRuntimeManager', () => {
     const manager = new LocalRuntimeManager(repository);
     repository.getRuntimeById.mockResolvedValue({ ...buildRuntime(), status: 'running' });
 
-    await expect(manager.remove('runtime-1', 'ops-user', 'tenant-a')).rejects.toThrow('Runtime must be stopped before deletion.');
+    await expect(manager.remove('runtime-1', 'ops-user', 'tenant-a')).rejects.toThrow(
+      'Runtime must be stopped before deletion.'
+    );
   });
 });

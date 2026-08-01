@@ -7,7 +7,7 @@ import {
   RuntimeInstance,
   RuntimeLogEntry,
   RuntimeStatus,
-  Workload
+  Workload,
 } from '../types';
 import { RuntimeRepository } from '../services/runtimeManager';
 
@@ -34,7 +34,7 @@ const mapWorkload = (row: Record<string, unknown>): Workload => ({
   networkExposed: row.network_exposed as boolean,
   resourcePolicy: (row.resource_policy as Record<string, unknown>) ?? {},
   createdAt: new Date(row.created_at as string).toISOString(),
-  updatedAt: new Date(row.updated_at as string).toISOString()
+  updatedAt: new Date(row.updated_at as string).toISOString(),
 });
 
 const mapRuntime = (row: Record<string, unknown>): RuntimeInstance => ({
@@ -54,7 +54,7 @@ const mapRuntime = (row: Record<string, unknown>): RuntimeInstance => ({
   updatedAt: new Date(row.updated_at as string).toISOString(),
   startedAt: row.started_at ? new Date(row.started_at as string).toISOString() : null,
   stoppedAt: row.stopped_at ? new Date(row.stopped_at as string).toISOString() : null,
-  deletedAt: row.deleted_at ? new Date(row.deleted_at as string).toISOString() : null
+  deletedAt: row.deleted_at ? new Date(row.deleted_at as string).toISOString() : null,
 });
 
 export class PlatformRepository implements RuntimeRepository {
@@ -94,7 +94,7 @@ export class PlatformRepository implements RuntimeRepository {
           'local-simulated',
           JSON.stringify(input.config ?? {}),
           input.networkExposed ?? false,
-          JSON.stringify(input.resourcePolicy ?? {})
+          JSON.stringify(input.resourcePolicy ?? {}),
         ]
       );
 
@@ -102,11 +102,15 @@ export class PlatformRepository implements RuntimeRepository {
         ownerId: input.ownerId,
         template: input.template,
         networkExposed: input.networkExposed ?? false,
-        desiredImage: input.desiredImage ?? null
+        desiredImage: input.desiredImage ?? null,
       });
 
       await client.query('COMMIT');
-      return this.getWorkloadById(workloadResult.rows[0].id, input.ownerId, client) as Promise<Workload>;
+      return this.getWorkloadById(
+        workloadResult.rows[0].id,
+        input.ownerId,
+        client
+      ) as Promise<Workload>;
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;
@@ -128,7 +132,11 @@ export class PlatformRepository implements RuntimeRepository {
     return result.rows.map((row: Record<string, unknown>) => mapWorkload(row));
   }
 
-  public async getWorkloadById(id: string, ownerId?: string, client?: PoolClient): Promise<Workload | null> {
+  public async getWorkloadById(
+    id: string,
+    ownerId?: string,
+    client?: PoolClient
+  ): Promise<Workload | null> {
     const params: unknown[] = [id];
     const ownerClause = ownerId ? 'AND pw.owner_id = $2' : '';
 
@@ -142,9 +150,7 @@ export class PlatformRepository implements RuntimeRepository {
        WHERE pw.id = $1 ${ownerClause}
        LIMIT 1`;
 
-    const result = client
-      ? await client.query(query, params)
-      : await this.db.query(query, params);
+    const result = client ? await client.query(query, params) : await this.db.query(query, params);
 
     return result.rows[0] ? mapWorkload(result.rows[0]) : null;
   }
@@ -192,18 +198,22 @@ export class PlatformRepository implements RuntimeRepository {
           input.isolationMode,
           input.template,
           JSON.stringify(input.launchRequest),
-          JSON.stringify(input.runtimeMetadata ?? {})
+          JSON.stringify(input.runtimeMetadata ?? {}),
         ]
       );
 
       await this.insertHistory(client, entityResult.rows[0].id, 'runtime.pending', {
         workloadId: input.workload.id,
         template: input.template,
-        isolationMode: input.isolationMode
+        isolationMode: input.isolationMode,
       });
 
       await client.query('COMMIT');
-      return this.getRuntimeById(runtimeResult.rows[0].id, input.ownerId, client) as Promise<RuntimeInstance>;
+      return this.getRuntimeById(
+        runtimeResult.rows[0].id,
+        input.ownerId,
+        client
+      ) as Promise<RuntimeInstance>;
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;
@@ -232,7 +242,11 @@ export class PlatformRepository implements RuntimeRepository {
     return result.rows.map((row: Record<string, unknown>) => mapRuntime(row));
   }
 
-  public async getRuntimeById(id: string, ownerId?: string, client?: PoolClient): Promise<RuntimeInstance | null> {
+  public async getRuntimeById(
+    id: string,
+    ownerId?: string,
+    client?: PoolClient
+  ): Promise<RuntimeInstance | null> {
     const params: unknown[] = [id];
     const ownerClause = ownerId ? 'AND ri.owner_id = $2' : '';
 
@@ -246,14 +260,15 @@ export class PlatformRepository implements RuntimeRepository {
        WHERE ri.id = $1 ${ownerClause}
        LIMIT 1`;
 
-    const result = client
-      ? await client.query(query, params)
-      : await this.db.query(query, params);
+    const result = client ? await client.query(query, params) : await this.db.query(query, params);
 
     return result.rows[0] ? mapRuntime(result.rows[0]) : null;
   }
 
-  public async updateRuntimeState(runtimeId: string, state: RuntimeStateUpdate): Promise<RuntimeInstance> {
+  public async updateRuntimeState(
+    runtimeId: string,
+    state: RuntimeStateUpdate
+  ): Promise<RuntimeInstance> {
     const result = await this.db.query(
       `UPDATE runtime_instances
        SET status = $2,
@@ -277,7 +292,7 @@ export class PlatformRepository implements RuntimeRepository {
         state.runtimeMetadata ? JSON.stringify(state.runtimeMetadata) : null,
         state.startedAt ?? null,
         state.stoppedAt ?? null,
-        state.deletedAt ?? null
+        state.deletedAt ?? null,
       ]
     );
 
@@ -314,7 +329,7 @@ export class PlatformRepository implements RuntimeRepository {
       eventType: row.event_type as string,
       eventData: (row.event_data as Record<string, unknown>) ?? {},
       createdBy: (row.created_by as string | null) ?? null,
-      createdAt: new Date(row.created_at as string).toISOString()
+      createdAt: new Date(row.created_at as string).toISOString(),
     }));
   }
 
@@ -347,11 +362,14 @@ export class PlatformRepository implements RuntimeRepository {
       level: row.level as 'info' | 'warn' | 'error',
       message: row.message as string,
       metadata: (row.metadata as Record<string, unknown>) ?? {},
-      createdAt: new Date(row.created_at as string).toISOString()
+      createdAt: new Date(row.created_at as string).toISOString(),
     }));
   }
 
-  private async getRuntimeRecord(runtimeId: string, ownerId?: string): Promise<{ entity_id: string }> {
+  private async getRuntimeRecord(
+    runtimeId: string,
+    ownerId?: string
+  ): Promise<{ entity_id: string }> {
     const params: unknown[] = [runtimeId];
     const ownerClause = ownerId ? 'AND owner_id = $2' : '';
 

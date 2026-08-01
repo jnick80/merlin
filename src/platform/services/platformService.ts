@@ -10,7 +10,7 @@ import {
   RuntimeLogEntry,
   RuntimeTemplate,
   StopRuntimeInput,
-  Workload
+  Workload,
 } from '../types';
 
 export class PlatformService {
@@ -26,7 +26,7 @@ export class PlatformService {
       ...input,
       config: input.config ?? {},
       resourcePolicy: input.resourcePolicy ?? {},
-      networkExposed: input.networkExposed ?? false
+      networkExposed: input.networkExposed ?? false,
     });
   }
 
@@ -44,7 +44,10 @@ export class PlatformService {
     return workload;
   }
 
-  public async launchRuntime(workloadId: string, input: LaunchRuntimeInput): Promise<RuntimeInstance> {
+  public async launchRuntime(
+    workloadId: string,
+    input: LaunchRuntimeInput
+  ): Promise<RuntimeInstance> {
     this.validateOwner(input.ownerId);
 
     const workload = await this.repository.getWorkloadById(workloadId, input.ownerId);
@@ -54,7 +57,11 @@ export class PlatformService {
     }
 
     if (workload.networkExposed) {
-      throw createAppError(400, 'Network-exposed workloads are not supported by the local simulated executor.', 'UNSUPPORTED_NETWORK_EXPOSURE');
+      throw createAppError(
+        400,
+        'Network-exposed workloads are not supported by the local simulated executor.',
+        'UNSUPPORTED_NETWORK_EXPOSURE'
+      );
     }
 
     return this.runtimeManager.launch(workload, input);
@@ -74,7 +81,11 @@ export class PlatformService {
     return runtime;
   }
 
-  public async stopRuntime(id: string, input: StopRuntimeInput, ownerId?: string): Promise<RuntimeInstance> {
+  public async stopRuntime(
+    id: string,
+    input: StopRuntimeInput,
+    ownerId?: string
+  ): Promise<RuntimeInstance> {
     try {
       return await this.runtimeManager.stop(id, input, ownerId);
     } catch (error) {
@@ -82,7 +93,11 @@ export class PlatformService {
     }
   }
 
-  public async deleteRuntime(id: string, requestedBy?: string, ownerId?: string): Promise<RuntimeInstance> {
+  public async deleteRuntime(
+    id: string,
+    requestedBy?: string,
+    ownerId?: string
+  ): Promise<RuntimeInstance> {
     try {
       return await this.runtimeManager.remove(id, requestedBy, ownerId);
     } catch (error) {
@@ -116,7 +131,11 @@ export class PlatformService {
 
   private validateTemplate(template: string): void {
     if (!getRuntimeTemplate(template)) {
-      throw createAppError(400, `Unknown runtime template: ${template}`, 'INVALID_RUNTIME_TEMPLATE');
+      throw createAppError(
+        400,
+        `Unknown runtime template: ${template}`,
+        'INVALID_RUNTIME_TEMPLATE'
+      );
     }
   }
 

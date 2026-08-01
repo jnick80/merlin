@@ -8,7 +8,7 @@ v1Router.get('/', (req: Request, res: Response) => {
     name: 'Merlin Business OS API',
     version: 'v1',
     status: 'ok',
-    capabilities: ['platform-control-plane', 'workload-definitions', 'runtime-lifecycle']
+    capabilities: ['platform-control-plane', 'workload-definitions', 'runtime-lifecycle'],
   });
 });
 

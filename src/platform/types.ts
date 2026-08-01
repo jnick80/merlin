@@ -1,11 +1,5 @@
 export type RuntimeStatus =
-  | 'pending'
-  | 'provisioning'
-  | 'running'
-  | 'stopping'
-  | 'stopped'
-  | 'failed'
-  | 'deleted';
+  'pending' | 'provisioning' | 'running' | 'stopping' | 'stopped' | 'failed' | 'deleted';
 
 export type RuntimeHealth = 'unknown' | 'healthy' | 'degraded' | 'unhealthy';
 
