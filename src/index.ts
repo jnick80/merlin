@@ -1,4 +1,4 @@
-import express, { Express, Request, Response, NextFunction } from 'express';
+import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
@@ -7,6 +7,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import { Database } from './database/connection';
 import { v1Router } from './api/v1';
+import { platformProfile } from './config/platformProfile';
 
 dotenv.config();
 
@@ -20,7 +21,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
 
 app.get('/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    product: platformProfile.productName,
+    timestamp: new Date().toISOString()
+  });
 });
 
 app.use('/api/v1', v1Router);
@@ -37,7 +42,7 @@ const startServer = async (): Promise<void> => {
     await db.connect();
     logger.info('Database connected successfully');
     app.listen(PORT, () => {
-      logger.info(`Merlin Business OS running on port ${PORT}`);
+      logger.info(`${platformProfile.productName} running on port ${PORT}`);
     });
   } catch (error) {
     logger.error('Failed to start server:', error);
