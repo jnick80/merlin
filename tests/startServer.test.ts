@@ -25,10 +25,14 @@ describe('startServer', () => {
 
     await jest.isolateModulesAsync(async () => {
       const { default: app, startServer } = await import('../src/index');
-      const listenSpy = jest.spyOn(app, 'listen').mockImplementation(((_port: number | string, callback?: () => void) => {
+      const listenSpy = jest.spyOn(app, 'listen').mockImplementation(((
+        _port: number | string,
+        ...args: Array<string | number | (() => void) | undefined>
+      ) => {
+        const callback = args.find((arg): arg is () => void => typeof arg === 'function');
         callback?.();
         return {} as never;
-      }) as typeof app.listen);
+      }) as unknown as typeof app.listen);
       const exitSpy = jest.spyOn(process, 'exit').mockImplementation(((_code?: number) => undefined as never) as typeof process.exit);
 
       await expect(startServer()).resolves.toBeUndefined();
