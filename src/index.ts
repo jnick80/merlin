@@ -13,6 +13,7 @@ dotenv.config();
 const app: Express = express();
 const PORT = process.env.PORT || 3000;
 const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '100kb';
+const cypherlinkIconFilename = 'cypherlink-icon.svg';
 const cypherlinkShortcutIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <rect width="64" height="64" rx="14" fill="#0f172a" />
   <path
@@ -64,6 +65,21 @@ app.get('/', (req: Request, res: Response) => {
       <h1>Merlin Business OS</h1>
       <p>GUI entry point for the Merlin API.</p>
 
+      <section aria-labelledby="cypherlink-icon">
+        <h2 id="cypherlink-icon">Cypherlink icon</h2>
+        <p>Preview and download the Cypherlink shortcut icon.</p>
+        <img
+          src="/cypherlink-icon.svg"
+          alt="Cypherlink icon preview"
+          width="128"
+          height="128"
+        />
+        <p>
+          <a href="/cypherlink-icon.svg" target="_blank" rel="noreferrer">Open icon</a>
+          <a href="/cypherlink-icon/download">Download icon</a>
+        </p>
+      </section>
+
       <section aria-labelledby="system-status">
         <h2 id="system-status">System status</h2>
         <ul>
@@ -87,6 +103,13 @@ app.get('/', (req: Request, res: Response) => {
 
 app.get('/cypherlink-icon.svg', (req: Request, res: Response) => {
   res.type('image/svg+xml').send(cypherlinkShortcutIcon);
+});
+
+app.get('/cypherlink-icon/download', (req: Request, res: Response) => {
+  res
+    .attachment(cypherlinkIconFilename)
+    .type('image/svg+xml')
+    .send(cypherlinkShortcutIcon);
 });
 
 app.get('/health', (req: Request, res: Response) => {
