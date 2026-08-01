@@ -1,6 +1,10 @@
 # D0!TY0UR3$3LF
 D0!TY0UR3$3LF is a farmer-friendly tractor diagnostics platform for vehicle fault detection and analysis.
 
+## Open source
+
+D0!TY0UR3$3LF is open source under the MIT License. See `/LICENSE` for the full license text.
+
 ## Platform architecture
 
 ```text
