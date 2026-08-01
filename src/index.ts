@@ -6,7 +6,7 @@ import { logger } from './utils/logger';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import { Database } from './database/connection';
-import { v1Router } from './api/v1';
+import { v1Metadata, v1Router } from './api/v1';
 
 dotenv.config();
 
@@ -18,6 +18,40 @@ app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
+
+app.get('/', (req: Request, res: Response) => {
+  res.type('html').send(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Merlin Business OS</title>
+  </head>
+  <body>
+    <main>
+      <h1>Merlin Business OS</h1>
+      <p>GUI entry point for the Merlin API.</p>
+
+      <section aria-labelledby="system-status">
+        <h2 id="system-status">System status</h2>
+        <ul>
+          <li>API name: ${v1Metadata.name}</li>
+          <li>API version: ${v1Metadata.version}</li>
+          <li>API status: ${v1Metadata.status}</li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="available-endpoints">
+        <h2 id="available-endpoints">Available endpoints</h2>
+        <ul>
+          <li><a href="/health">Health check</a></li>
+          <li><a href="/api/v1">API metadata</a></li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>`);
+});
 
 app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

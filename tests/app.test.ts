@@ -91,4 +91,40 @@ describe('app routes', () => {
       status: 'ok'
     });
   });
+
+  it('serves a GUI landing page', async () => {
+    const response = await new Promise<{ statusCode: number; body: string; contentType?: string }>(
+      (resolve, reject) => {
+        const req = http.request(
+          {
+            host: '127.0.0.1',
+            port,
+            path: '/',
+            method: 'GET'
+          },
+          async (res: IncomingMessage) => {
+            try {
+              resolve({
+                statusCode: res.statusCode ?? 0,
+                body: await readResponseBody(res),
+                contentType: res.headers['content-type']
+              });
+            } catch (error) {
+              reject(error);
+            }
+          }
+        );
+
+        req.on('error', reject);
+        req.end();
+      }
+    );
+
+    expect(response.statusCode).toBe(200);
+    expect(response.contentType).toContain('text/html');
+    expect(response.body).toContain('Merlin Business OS');
+    expect(response.body).toContain('GUI entry point for the Merlin API.');
+    expect(response.body).toContain('/health');
+    expect(response.body).toContain('/api/v1');
+  });
 });
