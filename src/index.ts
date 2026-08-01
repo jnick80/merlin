@@ -1,4 +1,4 @@
-import express, { Express, Request, Response, NextFunction } from 'express';
+import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
@@ -31,7 +31,7 @@ app.use((req: Request, res: Response) => {
 
 app.use(errorHandler);
 
-const startServer = async (): Promise<void> => {
+export const startServer = async (): Promise<void> => {
   try {
     const db = Database.getInstance();
     await db.connect();
@@ -40,10 +40,13 @@ const startServer = async (): Promise<void> => {
       logger.info(`Merlin Business OS running on port ${PORT}`);
     });
   } catch (error) {
-    logger.error('Failed to start server:', error);
+    logger.error('Failed to start server', { error });
     process.exit(1);
   }
 };
 
-startServer();
+if (require.main === module) {
+  void startServer();
+}
+
 export default app;

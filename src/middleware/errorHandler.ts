@@ -7,6 +7,7 @@ export interface AppError extends Error {
 }
 
 export const errorHandler = (err: AppError, req: Request, res: Response, next: NextFunction): void => {
+  void next;
   const status = err.status || 500;
   const message = err.message || 'Internal Server Error';
   logger.error(`[${status}] ${message}`, { path: req.path, method: req.method });

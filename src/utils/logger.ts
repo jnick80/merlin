@@ -7,7 +7,13 @@ winston.addColors(colors);
 
 const format = winston.format.combine(
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
-  winston.format.printf((info) => `${info.timestamp} ${info.level}: ${info.message}`)
+  winston.format.errors({ stack: true }),
+  winston.format.splat(),
+  winston.format.printf(({ timestamp, level, message, stack, ...meta }) => {
+    const metadata = Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : '';
+    const errorStack = stack ? `\n${stack}` : '';
+    return `${timestamp} ${level}: ${message}${metadata}${errorStack}`;
+  })
 );
 
 const transports = [
