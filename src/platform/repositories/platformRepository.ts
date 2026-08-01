@@ -129,7 +129,6 @@ export class PlatformRepository implements RuntimeRepository {
   }
 
   public async getWorkloadById(id: string, ownerId?: string, client?: PoolClient): Promise<Workload | null> {
-    const executor = client ?? this.db;
     const params: unknown[] = [id];
     const ownerClause = ownerId ? 'AND pw.owner_id = $2' : '';
 
@@ -137,14 +136,15 @@ export class PlatformRepository implements RuntimeRepository {
       params.push(ownerId);
     }
 
-    const result = await executor.query(
-      `SELECT pw.*, e.description, e.created_at, e.updated_at
+    const query = `SELECT pw.*, e.description, e.created_at, e.updated_at
        FROM platform_workloads pw
        INNER JOIN entities e ON e.id = pw.entity_id
        WHERE pw.id = $1 ${ownerClause}
-       LIMIT 1`,
-      params
-    );
+       LIMIT 1`;
+
+    const result = client
+      ? await client.query(query, params)
+      : await this.db.query(query, params);
 
     return result.rows[0] ? mapWorkload(result.rows[0]) : null;
   }
@@ -233,7 +233,6 @@ export class PlatformRepository implements RuntimeRepository {
   }
 
   public async getRuntimeById(id: string, ownerId?: string, client?: PoolClient): Promise<RuntimeInstance | null> {
-    const executor = client ?? this.db;
     const params: unknown[] = [id];
     const ownerClause = ownerId ? 'AND ri.owner_id = $2' : '';
 
@@ -241,14 +240,15 @@ export class PlatformRepository implements RuntimeRepository {
       params.push(ownerId);
     }
 
-    const result = await executor.query(
-      `SELECT ri.*, pw.name AS workload_name
+    const query = `SELECT ri.*, pw.name AS workload_name
        FROM runtime_instances ri
        INNER JOIN platform_workloads pw ON pw.id = ri.workload_id
        WHERE ri.id = $1 ${ownerClause}
-       LIMIT 1`,
-      params
-    );
+       LIMIT 1`;
+
+    const result = client
+      ? await client.query(query, params)
+      : await this.db.query(query, params);
 
     return result.rows[0] ? mapRuntime(result.rows[0]) : null;
   }

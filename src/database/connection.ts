@@ -1,4 +1,4 @@
-import { Pool, PoolClient } from 'pg';
+import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { logger } from '../utils/logger';
 
 export class Database {
@@ -31,9 +31,12 @@ export class Database {
     }
   }
 
-  public async query(text: string, params?: unknown[]): Promise<any> {
+  public async query<T extends QueryResultRow = QueryResultRow>(
+    text: string,
+    params?: unknown[]
+  ): Promise<QueryResult<T>> {
     try {
-      return await this.pool.query(text, params);
+      return await this.pool.query<T>(text, params);
     } catch (error) {
       logger.error('Database query failed:', error);
       throw error;

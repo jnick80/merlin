@@ -2,7 +2,16 @@ import { createAppError } from '../errors';
 import { getRuntimeTemplate, runtimeTemplates } from '../templates';
 import { PlatformRepository } from '../repositories/platformRepository';
 import { LocalRuntimeManager } from './runtimeManager';
-import { CreateWorkloadInput, LaunchRuntimeInput, StopRuntimeInput, RuntimeInstance, Workload } from '../types';
+import {
+  CreateWorkloadInput,
+  LaunchRuntimeInput,
+  RuntimeEvent,
+  RuntimeInstance,
+  RuntimeLogEntry,
+  RuntimeTemplate,
+  StopRuntimeInput,
+  Workload
+} from '../types';
 
 export class PlatformService {
   private readonly repository = new PlatformRepository();
@@ -81,15 +90,15 @@ export class PlatformService {
     }
   }
 
-  public async listRuntimeHistory(id: string, ownerId?: string) {
+  public async listRuntimeHistory(id: string, ownerId?: string): Promise<RuntimeEvent[]> {
     return this.repository.listRuntimeHistory(id, ownerId);
   }
 
-  public async listRuntimeLogs(id: string, ownerId?: string) {
+  public async listRuntimeLogs(id: string, ownerId?: string): Promise<RuntimeLogEntry[]> {
     return this.repository.listRuntimeLogs(id, ownerId);
   }
 
-  public listRuntimeTemplates() {
+  public listRuntimeTemplates(): RuntimeTemplate[] {
     return runtimeTemplates;
   }
 

@@ -51,7 +51,12 @@ describe('LocalRuntimeManager', () => {
     const repository = createRepository();
     const manager = new LocalRuntimeManager(repository);
     const createdRuntime = buildRuntime();
-    const runningRuntime = { ...createdRuntime, status: 'running', healthStatus: 'healthy', startedAt: new Date().toISOString() };
+    const runningRuntime: RuntimeInstance = {
+      ...createdRuntime,
+      status: 'running',
+      healthStatus: 'healthy',
+      startedAt: new Date().toISOString()
+    };
 
     repository.createRuntimeInstance.mockResolvedValue(createdRuntime);
     repository.updateRuntimeState
@@ -74,8 +79,13 @@ describe('LocalRuntimeManager', () => {
   it('stops a running runtime and records stop transitions', async () => {
     const repository = createRepository();
     const manager = new LocalRuntimeManager(repository);
-    const runningRuntime = { ...buildRuntime(), status: 'running', healthStatus: 'healthy' };
-    const stoppedRuntime = { ...runningRuntime, status: 'stopped', healthStatus: 'unknown', stoppedAt: new Date().toISOString() };
+    const runningRuntime: RuntimeInstance = { ...buildRuntime(), status: 'running', healthStatus: 'healthy' };
+    const stoppedRuntime: RuntimeInstance = {
+      ...runningRuntime,
+      status: 'stopped',
+      healthStatus: 'unknown',
+      stoppedAt: new Date().toISOString()
+    };
 
     repository.getRuntimeById.mockResolvedValue(runningRuntime);
     repository.updateRuntimeState
