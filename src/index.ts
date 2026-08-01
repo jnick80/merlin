@@ -11,12 +11,27 @@ import { v1Router } from './api/v1';
 dotenv.config();
 
 const PORT = process.env.PORT || 3000;
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 export const createApp = (): Express => {
   const app: Express = express();
 
   app.use(helmet());
-  app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+          return;
+        }
+
+        callback(new Error('Origin not allowed by CORS policy.'));
+      }
+    })
+  );
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(requestLogger);
