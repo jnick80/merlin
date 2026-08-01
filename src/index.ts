@@ -13,6 +13,18 @@ dotenv.config();
 const app: Express = express();
 const PORT = process.env.PORT || 3000;
 const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '100kb';
+const cypherlinkShortcutIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#0f172a" />
+  <path
+    d="M25 23h-4a8 8 0 0 0 0 16h4m14-16h4a8 8 0 0 1 0 16h-4m-12-8h10"
+    fill="none"
+    stroke="#22d3ee"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="5"
+  />
+  <circle cx="32" cy="32" r="5" fill="#38bdf8" />
+</svg>`;
 const allowedOrigins = new Set(
   (process.env.CORS_ORIGIN || '')
     .split(',')
@@ -44,6 +56,7 @@ app.get('/', (req: Request, res: Response) => {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="shortcut icon" href="/cypherlink-icon.svg" type="image/svg+xml" />
     <title>Merlin Business OS</title>
   </head>
   <body>
@@ -70,6 +83,10 @@ app.get('/', (req: Request, res: Response) => {
     </main>
   </body>
 </html>`);
+});
+
+app.get('/cypherlink-icon.svg', (req: Request, res: Response) => {
+  res.type('image/svg+xml').send(cypherlinkShortcutIcon);
 });
 
 app.get('/health', (req: Request, res: Response) => {

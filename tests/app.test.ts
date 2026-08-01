@@ -121,8 +121,18 @@ describe('app routes', () => {
     expect(response.headers['content-type']).toContain('text/html');
     expect(response.body).toContain('Merlin Business OS');
     expect(response.body).toContain('GUI entry point for the Merlin API.');
+    expect(response.body).toContain('/cypherlink-icon.svg');
     expect(response.body).toContain('/health');
     expect(response.body).toContain('/api/v1');
+  });
+
+  it('serves the Cypherlink shortcut icon', async () => {
+    const response = await makeRequest(port, '/cypherlink-icon.svg');
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-type']).toContain('image/svg+xml');
+    expect(response.body).toContain('<svg');
+    expect(response.body).toContain('</svg>');
   });
 
   it('does not expose the Express signature header', async () => {
