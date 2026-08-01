@@ -13,6 +13,7 @@ dotenv.config();
 const app: Express = express();
 const PORT = process.env.PORT || 3000;
 const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '100kb';
+type DatabaseStartupStatus = 'not_started' | 'connected' | 'unavailable';
 const cypherlinkIconFilename = 'cypherlink-icon.svg';
 const cypherlinkShortcutIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <rect width="64" height="64" rx="14" fill="#0f172a" />
@@ -32,6 +33,31 @@ const allowedOrigins = new Set(
     .map((origin) => origin.trim())
     .filter(Boolean)
 );
+let databaseStartupStatus: DatabaseStartupStatus = 'not_started';
+
+const getErrorDetails = (error: unknown): Record<string, string> => {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      ...(error.stack ? { stack: error.stack } : {})
+    };
+  }
+
+  return { message: String(error) };
+};
+
+const connectDatabase = async (): Promise<void> => {
+  try {
+    const db = Database.getInstance();
+    await db.connect();
+    databaseStartupStatus = 'connected';
+    logger.info('Database connected successfully');
+  } catch (error) {
+    databaseStartupStatus = 'unavailable';
+    logger.warn('Database unavailable, starting without database connection', getErrorDetails(error));
+  }
+};
 
 app.disable('x-powered-by');
 app.use(helmet());
@@ -113,7 +139,11 @@ app.get('/cypherlink-icon/download', (req: Request, res: Response) => {
 });
 
 app.get('/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({
+    status: databaseStartupStatus === 'unavailable' ? 'degraded' : 'ok',
+    database: databaseStartupStatus,
+    timestamp: new Date().toISOString()
+  });
 });
 
 app.use('/api/v1', v1Router);
@@ -126,14 +156,12 @@ app.use(errorHandler);
 
 export const startServer = async (): Promise<void> => {
   try {
-    const db = Database.getInstance();
-    await db.connect();
-    logger.info('Database connected successfully');
+    await connectDatabase();
     app.listen(PORT, () => {
       logger.info(`Merlin Business OS running on port ${PORT}`);
     });
   } catch (error) {
-    logger.error('Failed to start server', { error });
+    logger.error('Failed to start server', getErrorDetails(error));
     process.exit(1);
   }
 };

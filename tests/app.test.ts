@@ -99,7 +99,7 @@ describe('app routes', () => {
     const response = await requestJson(port, '/health');
 
     expect(response.statusCode).toBe(200);
-    expect(response.body).toMatchObject({ status: 'ok' });
+    expect(response.body).toMatchObject({ status: 'ok', database: 'not_started' });
     expect(typeof response.body.timestamp).toBe('string');
   });
 
