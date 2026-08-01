@@ -15,3 +15,9 @@ This repository uses Dependabot to propose dependency updates through pull reque
 - Dependency changes are reviewed through pull requests
 - Pull requests run dependency review for new vulnerable packages
 - The repository tracks `package-lock.json` so automated updates and CI use a reproducible dependency graph
+
+## CypherLink release download
+
+- Tagged releases automatically publish a production-ready asset named `CypherLink.zip`
+- Latest direct download: `https://github.com/jnick80/merlin/releases/latest/download/CypherLink.zip`
+- Versioned direct download: `https://github.com/jnick80/merlin/releases/download/<tag>/CypherLink.zip`
