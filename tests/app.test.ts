@@ -19,24 +19,30 @@ const readResponseBody = async (response: IncomingMessage): Promise<string> =>
     response.on('error', reject);
   });
 
-const requestJson = async (
+const makeRequest = async (
   port: number,
-  path: string
-): Promise<{ statusCode: number; body: JsonObject }> =>
+  path: string,
+  options?: {
+    method?: string;
+    headers?: Record<string, string>;
+    body?: string;
+  }
+): Promise<{ statusCode: number; body: string; headers: IncomingMessage['headers'] }> =>
   new Promise((resolve, reject) => {
     const req = http.request(
       {
         host: '127.0.0.1',
         port,
         path,
-        method: 'GET'
+        method: options?.method || 'GET',
+        headers: options?.headers
       },
       async (res: IncomingMessage) => {
         try {
-          const body = await readResponseBody(res);
           resolve({
             statusCode: res.statusCode ?? 0,
-            body: JSON.parse(body) as JsonObject
+            body: await readResponseBody(res),
+            headers: res.headers
           });
         } catch (error) {
           reject(error);
@@ -45,8 +51,24 @@ const requestJson = async (
     );
 
     req.on('error', reject);
+    if (options?.body) {
+      req.write(options.body);
+    }
     req.end();
   });
+
+const requestJson = async (
+  port: number,
+  path: string
+): Promise<{ statusCode: number; body: JsonObject; headers: IncomingMessage['headers'] }> => {
+  const response = await makeRequest(port, path);
+
+  return {
+    statusCode: response.statusCode,
+    body: JSON.parse(response.body) as JsonObject,
+    headers: response.headers
+  };
+};
 
 describe('app routes', () => {
   let server: http.Server<typeof IncomingMessage, typeof ServerResponse>;
@@ -93,38 +115,41 @@ describe('app routes', () => {
   });
 
   it('serves a GUI landing page', async () => {
-    const response = await new Promise<{ statusCode: number; body: string; contentType?: string }>(
-      (resolve, reject) => {
-        const req = http.request(
-          {
-            host: '127.0.0.1',
-            port,
-            path: '/',
-            method: 'GET'
-          },
-          async (res: IncomingMessage) => {
-            try {
-              resolve({
-                statusCode: res.statusCode ?? 0,
-                body: await readResponseBody(res),
-                contentType: res.headers['content-type']
-              });
-            } catch (error) {
-              reject(error);
-            }
-          }
-        );
-
-        req.on('error', reject);
-        req.end();
-      }
-    );
+    const response = await makeRequest(port, '/');
 
     expect(response.statusCode).toBe(200);
-    expect(response.contentType).toContain('text/html');
+    expect(response.headers['content-type']).toContain('text/html');
     expect(response.body).toContain('Merlin Business OS');
     expect(response.body).toContain('GUI entry point for the Merlin API.');
     expect(response.body).toContain('/health');
     expect(response.body).toContain('/api/v1');
+  });
+
+  it('does not expose the Express signature header', async () => {
+    const response = await makeRequest(port, '/health');
+
+    expect(response.headers['x-powered-by']).toBeUndefined();
+  });
+
+  it('does not allow arbitrary cross-origin access by default', async () => {
+    const response = await makeRequest(port, '/health', {
+      headers: { Origin: 'https://evil.example' }
+    });
+
+    expect(response.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
+  it('rejects oversized JSON payloads', async () => {
+    const oversizedBody = JSON.stringify({ payload: 'a'.repeat(110_000) });
+    const response = await makeRequest(port, '/api/v1', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(oversizedBody).toString()
+      },
+      body: oversizedBody
+    });
+
+    expect(response.statusCode).toBe(413);
   });
 });

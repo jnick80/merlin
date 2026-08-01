@@ -6,12 +6,22 @@ export class Database {
   private pool: Pool;
 
   private constructor() {
+    const databasePassword = process.env.DB_PASSWORD?.trim();
+
+    if (!databasePassword) {
+      throw new Error('DB_PASSWORD environment variable is required');
+    }
+
+    if (databasePassword === 'secure_password') {
+      throw new Error('DB_PASSWORD must not use the insecure default value');
+    }
+
     this.pool = new Pool({
       host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '5432'),
+      port: parseInt(process.env.DB_PORT || '5432', 10),
       database: process.env.DB_NAME || 'merlin_db',
       user: process.env.DB_USER || 'merlin_user',
-      password: process.env.DB_PASSWORD || 'secure_password'
+      password: databasePassword
     });
   }
 

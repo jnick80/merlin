@@ -12,11 +12,30 @@ dotenv.config();
 
 const app: Express = express();
 const PORT = process.env.PORT || 3000;
+const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '100kb';
+const allowedOrigins = new Set(
+  (process.env.CORS_ORIGIN || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+);
 
+app.disable('x-powered-by');
 app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (origin && allowedOrigins.has(origin)) {
+        callback(null, origin);
+        return;
+      }
+
+      callback(null, false);
+    }
+  })
+);
+app.use(express.json({ limit: requestBodyLimit }));
+app.use(express.urlencoded({ extended: true, limit: requestBodyLimit, parameterLimit: 100 }));
 app.use(requestLogger);
 
 app.get('/', (req: Request, res: Response) => {
