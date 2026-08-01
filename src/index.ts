@@ -10,32 +10,38 @@ import { v1Router } from './api/v1';
 
 dotenv.config();
 
-const app: Express = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(requestLogger);
+export const createApp = (): Express => {
+  const app: Express = express();
 
-app.get('/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+  app.use(helmet());
+  app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  app.use(requestLogger);
 
-app.use('/api/v1', v1Router);
+  app.get('/health', (req: Request, res: Response) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
 
-app.use((req: Request, res: Response) => {
-  res.status(404).json({ error: 'Not Found', path: req.path });
-});
+  app.use('/api/v1', v1Router);
 
-app.use(errorHandler);
+  app.use((req: Request, res: Response) => {
+    res.status(404).json({ error: 'Not Found', path: req.path });
+  });
+
+  app.use(errorHandler);
+
+  return app;
+};
 
 const startServer = async (): Promise<void> => {
   try {
     const db = Database.getInstance();
     await db.connect();
     logger.info('Database connected successfully');
+    const app = createApp();
     app.listen(PORT, () => {
       logger.info(`Merlin Business OS running on port ${PORT}`);
     });
@@ -45,5 +51,8 @@ const startServer = async (): Promise<void> => {
   }
 };
 
-startServer();
-export default app;
+if (require.main === module) {
+  void startServer();
+}
+
+export default createApp();

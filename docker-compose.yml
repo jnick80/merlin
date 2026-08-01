@@ -28,6 +28,7 @@ services:
       DB_NAME: merlin_db
       DB_USER: merlin_user
       DB_PASSWORD: secure_password
+      PLATFORM_EXECUTOR: local-simulated
     ports:
       - '3000:3000'
     depends_on:

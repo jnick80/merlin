@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 CREATE TABLE IF NOT EXISTS entities (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   type VARCHAR(100) NOT NULL,
@@ -108,6 +110,50 @@ CREATE TABLE IF NOT EXISTS automations (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS platform_workloads (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  entity_id UUID NOT NULL UNIQUE REFERENCES entities(id) ON DELETE CASCADE,
+  owner_id VARCHAR(255) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  template VARCHAR(100) NOT NULL,
+  desired_image VARCHAR(255),
+  runtime_class VARCHAR(100) NOT NULL DEFAULT 'local-simulated',
+  config JSONB NOT NULL DEFAULT '{}'::jsonb,
+  network_exposed BOOLEAN NOT NULL DEFAULT FALSE,
+  resource_policy JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(owner_id, name)
+);
+
+CREATE TABLE IF NOT EXISTS runtime_instances (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  entity_id UUID NOT NULL UNIQUE REFERENCES entities(id) ON DELETE CASCADE,
+  workload_id UUID NOT NULL REFERENCES platform_workloads(id) ON DELETE CASCADE,
+  owner_id VARCHAR(255) NOT NULL,
+  status VARCHAR(50) NOT NULL,
+  health_status VARCHAR(50) NOT NULL DEFAULT 'unknown',
+  isolation_mode VARCHAR(100) NOT NULL,
+  template VARCHAR(100) NOT NULL,
+  assigned_node VARCHAR(255),
+  launch_request JSONB NOT NULL DEFAULT '{}'::jsonb,
+  runtime_metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  started_at TIMESTAMP,
+  stopped_at TIMESTAMP,
+  deleted_at TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS runtime_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  runtime_instance_id UUID NOT NULL REFERENCES runtime_instances(id) ON DELETE CASCADE,
+  level VARCHAR(20) NOT NULL,
+  message TEXT NOT NULL,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX idx_entities_type ON entities(type);
 CREATE INDEX idx_identities_entity_id ON identities(entity_id);
 CREATE INDEX idx_states_entity_id ON states(entity_id);
@@ -120,3 +166,8 @@ CREATE INDEX idx_relationships_source ON relationships(source_entity_id);
 CREATE INDEX idx_relationships_target ON relationships(target_entity_id);
 CREATE INDEX idx_history_entity_id ON history(entity_id);
 CREATE INDEX idx_automations_entity_id ON automations(entity_id);
+CREATE INDEX idx_platform_workloads_owner_id ON platform_workloads(owner_id);
+CREATE INDEX idx_runtime_instances_workload_id ON runtime_instances(workload_id);
+CREATE INDEX idx_runtime_instances_owner_id ON runtime_instances(owner_id);
+CREATE INDEX idx_runtime_instances_status ON runtime_instances(status);
+CREATE INDEX idx_runtime_logs_runtime_instance_id ON runtime_logs(runtime_instance_id);
