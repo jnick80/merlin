@@ -4,7 +4,7 @@ import Joi from 'joi';
 dotenv.config();
 
 const envSchema = Joi.object({
-  APP_NAME: Joi.string().trim().default('merlin-business-os'),
+  APP_NAME: Joi.string().trim().default('merlin-tractor-diagnostics'),
   NODE_ENV: Joi.string().valid('development', 'test', 'production').default('development'),
   PORT: Joi.number().port().default(3000),
   LOG_LEVEL: Joi.string().valid('error', 'warn', 'info', 'http', 'debug').default('info'),

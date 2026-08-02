@@ -1,15 +1,23 @@
 # merlin
 
-Merlin Business Operating System is a Node/TypeScript service for entity management and platform runtime orchestration.
+Merlin Tractor Diagnostics is a local-first Node/TypeScript service that helps farmers look up tractor codes, review likely causes, and follow safe maintenance or repair steps without needing a public domain.
 
-## Platform control plane
+## Tractor diagnostics MVP
 
-The service exposes a first-milestone platform control plane under `/api/v1/platform` for:
+The service now exposes a tractor diagnostics API under `/api/v1` for:
 
-- creating workload definitions
-- launching isolated runtime instances through a development-safe simulated microVM executor
-- listing runtime status, lifecycle history, and runtime logs
-- stopping and deleting runtimes without executing tenant software in the API process
+- listing supported tractor brands and starter-model catalog entries
+- looking up model-aware diagnostic codes for common tractor brands
+- returning farmer-safe guidance, severity, safety warnings, and escalation advice
+- searching likely issues by symptom when a code is missing or unrecognized
+- maintaining the local starter catalog through admin endpoints
+
+### Local-first behavior
+
+- No public domain is required.
+- The API is intended to run on localhost or a private network first.
+- Startup will continue even if PostgreSQL is unavailable so the seeded diagnostics catalog can still be used.
+- The current platform control plane remains mounted under `/api/v1/platform`, but it is no longer the primary product surface.
 
 ## Configuration areas
 
@@ -38,13 +46,31 @@ The service exposes a first-milestone platform control plane under `/api/v1/plat
 
 1. Copy `/home/runner/work/merlin/merlin/.env.example` to `.env` and update values as needed.
 2. Install dependencies with `npm install`.
-3. Start Postgres and the app with `npm run docker:up`, or run Postgres separately and start the app locally with `npm run dev`.
+3. Start the app locally with `npm run dev`. Postgres is optional for the diagnostics MVP starter catalog.
 4. Build the production bundle with `npm run build`.
 
 The Dockerfile supports both development and production images:
 
 - `development` stage for local containerized work
 - `production` stage for deployable runtime images
+
+## Diagnostic API routes
+
+- `GET /api/v1`
+- `GET /api/v1/tractors/brands`
+- `GET /api/v1/tractors/models?manufacturerId=john-deere`
+- `GET /api/v1/diagnostics/codes/lookup?manufacturerId=john-deere&modelId=jd-6m&code=JD-FUEL-01`
+- `POST /api/v1/diagnostics/codes/lookup`
+- `GET /api/v1/diagnostics/symptoms/search?manufacturerId=new-holland&symptom=pto%20warning`
+- `GET /api/v1/catalog/summary`
+- `GET /api/v1/catalog/codes`
+- `POST /api/v1/catalog/codes`
+
+## Starter catalog note
+
+- The included catalog is a local MVP starter dataset for John Deere, Case IH, New Holland, Kubota, and Massey Ferguson.
+- Guidance should be verified against operator or service documentation before field use on a specific machine.
+- Brand-specific and model-specific variations are supported, including codes that require the exact model before guidance can be shown.
 
 ### Deployment
 
