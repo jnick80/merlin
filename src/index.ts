@@ -18,6 +18,7 @@ export const createApp = (): Express => {
     apiVersion: env.API_VERSION,
     corsOrigins: allowedOrigins,
     executor: env.PLATFORM_EXECUTOR,
+    localFirstDiagnostics: true,
   });
 
   app.use(helmet());
@@ -43,6 +44,7 @@ export const createApp = (): Express => {
       service: env.APP_NAME,
       version: env.API_VERSION,
       executor: env.PLATFORM_EXECUTOR,
+      localFirstDiagnostics: true,
       timestamp: new Date().toISOString(),
     });
   });
@@ -66,13 +68,22 @@ const startServer = async (): Promise<void> => {
       executor: env.PLATFORM_EXECUTOR,
     });
 
-    const db = Database.getInstance();
-    await db.connect();
-    startupLogger.info('Database connected successfully', {
-      host: env.DB_HOST,
-      database: env.DB_NAME,
-      port: env.DB_PORT,
-    });
+    try {
+      const db = Database.getInstance();
+      await db.connect();
+      startupLogger.info('Database connected successfully', {
+        host: env.DB_HOST,
+        database: env.DB_NAME,
+        port: env.DB_PORT,
+      });
+    } catch (error) {
+      startupLogger.warn('Database unavailable; local diagnostics endpoints remain available', {
+        host: env.DB_HOST,
+        database: env.DB_NAME,
+        port: env.DB_PORT,
+        error,
+      });
+    }
 
     const app = createApp();
     app.listen(env.PORT, () => {

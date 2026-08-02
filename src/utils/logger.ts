@@ -6,7 +6,7 @@ import { env } from '../config/env';
 const levels = { error: 0, warn: 1, info: 2, http: 3, debug: 4 };
 const colors = { error: 'red', warn: 'yellow', info: 'green', http: 'magenta', debug: 'white' };
 
-type LogSection = 'app' | 'startup' | 'request' | 'database' | 'runtime' | 'error';
+type LogSection = 'app' | 'startup' | 'request' | 'database' | 'runtime' | 'error' | 'diagnostics';
 
 type LogMetadata = Record<string, unknown>;
 
