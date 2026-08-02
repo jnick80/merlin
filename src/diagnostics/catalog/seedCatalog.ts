@@ -135,10 +135,7 @@ const diagnosticCodes: DiagnosticCodeDefinition[] = [
     ],
     requiredTools: ['flashlight', 'clean catch pan'],
     requiredParts: ['fuel filters if service interval is due'],
-    maintenanceChecks: [
-      'inspect for loose fuel connections',
-      'confirm filters are not overdue',
-    ],
+    maintenanceChecks: ['inspect for loose fuel connections', 'confirm filters are not overdue'],
     repairSteps: [
       'Move the tractor to a safe location and shut it down.',
       'Inspect fuel lines and filter housings for leaks or looseness.',

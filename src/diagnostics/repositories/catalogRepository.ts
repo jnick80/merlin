@@ -49,7 +49,9 @@ export class CatalogRepository {
   }
 
   public listModels(manufacturerId?: string): TractorModel[] {
-    return this.models.filter((model) => !manufacturerId || model.manufacturerId === manufacturerId);
+    return this.models.filter(
+      (model) => !manufacturerId || model.manufacturerId === manufacturerId
+    );
   }
 
   public getModelById(id: string): TractorModel | undefined {

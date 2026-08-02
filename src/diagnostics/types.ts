@@ -1,11 +1,7 @@
 export type GuidanceSeverity = 'maintenance' | 'advisory' | 'warning' | 'critical';
 
 export type RecommendationType =
-  | 'self-service'
-  | 'monitor'
-  | 'schedule-service'
-  | 'stop-and-service'
-  | 'technician';
+  'self-service' | 'monitor' | 'schedule-service' | 'stop-and-service' | 'technician';
 
 export interface Manufacturer {
   id: string;

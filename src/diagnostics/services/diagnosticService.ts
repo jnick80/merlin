@@ -173,7 +173,9 @@ export class DiagnosticService {
     const manufacturer = input.manufacturerId
       ? this.requireManufacturer(input.manufacturerId)
       : undefined;
-    const model = input.modelId ? this.requireModel(input.modelId, input.manufacturerId) : undefined;
+    const model = input.modelId
+      ? this.requireModel(input.modelId, input.manufacturerId)
+      : undefined;
     const normalizedSymptom = normalizeText(input.symptom);
 
     if (!normalizedSymptom) {
@@ -288,7 +290,8 @@ export class DiagnosticService {
         return {
           canContinueOperating: true,
           recommendationType: 'schedule-service',
-          summary: 'This is a maintenance item. Complete the listed service soon to prevent larger problems.',
+          summary:
+            'This is a maintenance item. Complete the listed service soon to prevent larger problems.',
           nextSteps: definition.repairSteps,
           maintenanceFocus: true,
         };
