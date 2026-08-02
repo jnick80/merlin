@@ -1,5 +1,8 @@
-import { Pool, PoolClient } from 'pg';
-import { logger } from '../utils/logger';
+import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
+import { env } from '../config/env';
+import { createSectionLogger } from '../utils/logger';
+
+const databaseLogger = createSectionLogger('database');
 
 export class Database {
   private static instance: Database;
@@ -7,11 +10,11 @@ export class Database {
 
   private constructor() {
     this.pool = new Pool({
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '5432'),
-      database: process.env.DB_NAME || 'merlin_db',
-      user: process.env.DB_USER || 'merlin_user',
-      password: process.env.DB_PASSWORD || 'secure_password'
+      host: env.DB_HOST,
+      port: env.DB_PORT,
+      database: env.DB_NAME,
+      user: env.DB_USER,
+      password: env.DB_PASSWORD,
     });
   }
 
@@ -23,19 +26,35 @@ export class Database {
   public async connect(): Promise<void> {
     try {
       const client = await this.pool.connect();
-      logger.info('Database connection test successful');
+      databaseLogger.info('Database connection test successful', {
+        host: env.DB_HOST,
+        database: env.DB_NAME,
+        port: env.DB_PORT,
+      });
       client.release();
     } catch (error) {
-      logger.error('Database connection failed:', error);
+      databaseLogger.error('Database connection failed', {
+        host: env.DB_HOST,
+        database: env.DB_NAME,
+        port: env.DB_PORT,
+        error,
+      });
       throw error;
     }
   }
 
-  public async query(text: string, params?: unknown[]): Promise<any> {
+  public async query<T extends QueryResultRow = QueryResultRow>(
+    text: string,
+    params?: unknown[]
+  ): Promise<QueryResult<T>> {
     try {
-      return await this.pool.query(text, params);
+      return await this.pool.query<T>(text, params);
     } catch (error) {
-      logger.error('Database query failed:', error);
+      databaseLogger.error('Database query failed', {
+        statement: text,
+        parameterCount: params?.length ?? 0,
+        error,
+      });
       throw error;
     }
   }
@@ -46,6 +65,10 @@ export class Database {
 
   public async disconnect(): Promise<void> {
     await this.pool.end();
-    logger.info('Database connection closed');
+    databaseLogger.info('Database connection closed', {
+      host: env.DB_HOST,
+      database: env.DB_NAME,
+      port: env.DB_PORT,
+    });
   }
 }

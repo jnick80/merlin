@@ -11,7 +11,7 @@ export interface State {
   id: string;
   entityId: string;
   status: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,7 +31,7 @@ export interface Intelligence {
   id: string;
   entityId: string;
   insightType: string;
-  insightData: Record<string, any>;
+  insightData: Record<string, unknown>;
   confidenceScore?: number;
   createdAt: Date;
 }
@@ -41,7 +41,7 @@ export interface Asset {
   entityId: string;
   assetType: string;
   assetName: string;
-  assetData?: Record<string, any>;
+  assetData?: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -50,7 +50,7 @@ export interface Operation {
   id: string;
   entityId: string;
   operationType: string;
-  operationData: Record<string, any>;
+  operationData: Record<string, unknown>;
   status: 'pending' | 'in_progress' | 'completed' | 'failed';
   createdAt: Date;
   completedAt?: Date;
@@ -71,7 +71,7 @@ export interface Relationship {
   sourceEntityId: string;
   targetEntityId: string;
   relationshipType: string;
-  relationshipData?: Record<string, any>;
+  relationshipData?: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -80,7 +80,7 @@ export interface HistoryEvent {
   id: string;
   entityId: string;
   eventType: string;
-  eventData: Record<string, any>;
+  eventData: Record<string, unknown>;
   createdBy?: string;
   createdAt: Date;
 }
@@ -90,7 +90,7 @@ export interface Automation {
   entityId: string;
   automationName: string;
   automationType: string;
-  automationRules: Record<string, any>;
+  automationRules: Record<string, unknown>;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

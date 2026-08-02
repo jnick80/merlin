@@ -1,21 +1,44 @@
-import { Request, Response, NextFunction } from 'express';
-import { logger } from '../utils/logger';
+import { NextFunction, Request, Response } from 'express';
+import { env } from '../config/env';
+import { createSectionLogger } from '../utils/logger';
+
+const errorLogger = createSectionLogger('error');
 
 export interface AppError extends Error {
   status?: number;
   code?: string;
 }
 
-export const errorHandler = (err: AppError, req: Request, res: Response, next: NextFunction): void => {
+export const errorHandler = (
+  err: AppError,
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  void next;
   const status = err.status || 500;
   const message = err.message || 'Internal Server Error';
-  logger.error(`[${status}] ${message}`, { path: req.path, method: req.method });
+
+  errorLogger.error('Request failed', {
+    requestId: req.requestId,
+    statusCode: status,
+    errorCode: err.code,
+    method: req.method,
+    path: req.originalUrl,
+    error: {
+      name: err.name,
+      message: err.message,
+      stack: err.stack,
+    },
+  });
+
   res.status(status).json({
     error: {
       status,
       message,
       code: err.code,
-      ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-    }
+      requestId: req.requestId,
+      ...(env.NODE_ENV === 'development' && { stack: err.stack }),
+    },
   });
 };

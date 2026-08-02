@@ -1,49 +1,106 @@
-import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import express, { Express, Request, Response } from 'express';
 import helmet from 'helmet';
-import dotenv from 'dotenv';
-import { logger } from './utils/logger';
+import { v1Router } from './api/v1';
+import { env, allowedOrigins } from './config/env';
+import { Database } from './database/connection';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
-import { Database } from './database/connection';
-import { v1Router } from './api/v1';
+import { createSectionLogger } from './utils/logger';
 
-dotenv.config();
+const startupLogger = createSectionLogger('startup');
+const appLogger = createSectionLogger('app');
 
-const app: Express = express();
-const PORT = process.env.PORT || 3000;
+export const createApp = (): Express => {
+  const app: Express = express();
 
-app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(requestLogger);
+  appLogger.info('Configuring Express application', {
+    apiVersion: env.API_VERSION,
+    corsOrigins: allowedOrigins,
+    executor: env.PLATFORM_EXECUTOR,
+    localFirstDiagnostics: true,
+  });
 
-app.get('/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+  app.use(helmet());
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+          return;
+        }
 
-app.use('/api/v1', v1Router);
+        callback(new Error('Origin not allowed by CORS policy.'));
+      },
+    })
+  );
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  app.use(requestLogger);
 
-app.use((req: Request, res: Response) => {
-  res.status(404).json({ error: 'Not Found', path: req.path });
-});
+  app.get('/health', (_req: Request, res: Response) => {
+    res.json({
+      status: 'ok',
+      service: env.APP_NAME,
+      version: env.API_VERSION,
+      executor: env.PLATFORM_EXECUTOR,
+      localFirstDiagnostics: true,
+      timestamp: new Date().toISOString(),
+    });
+  });
 
-app.use(errorHandler);
+  app.use(`/api/${env.API_VERSION}`, v1Router);
+
+  app.use((req: Request, res: Response) => {
+    res.status(404).json({ error: 'Not Found', path: req.path, requestId: req.requestId });
+  });
+
+  app.use(errorHandler);
+
+  return app;
+};
 
 const startServer = async (): Promise<void> => {
   try {
-    const db = Database.getInstance();
-    await db.connect();
-    logger.info('Database connected successfully');
-    app.listen(PORT, () => {
-      logger.info(`Merlin Business OS running on port ${PORT}`);
+    startupLogger.info('Starting service', {
+      nodeEnv: env.NODE_ENV,
+      port: env.PORT,
+      executor: env.PLATFORM_EXECUTOR,
+    });
+
+    try {
+      const db = Database.getInstance();
+      await db.connect();
+      startupLogger.info('Database connected successfully', {
+        host: env.DB_HOST,
+        database: env.DB_NAME,
+        port: env.DB_PORT,
+      });
+    } catch (error) {
+      startupLogger.warn('Database unavailable; local diagnostics endpoints remain available', {
+        host: env.DB_HOST,
+        database: env.DB_NAME,
+        port: env.DB_PORT,
+        error,
+      });
+    }
+
+    const app = createApp();
+    app.listen(env.PORT, () => {
+      startupLogger.info('Service listening', {
+        port: env.PORT,
+        apiBaseUrl: env.API_BASE_URL,
+        apiVersion: env.API_VERSION,
+      });
     });
   } catch (error) {
-    logger.error('Failed to start server:', error);
+    startupLogger.error('Failed to start service', { error });
     process.exit(1);
   }
 };
 
-startServer();
-export default app;
+if (require.main === module) {
+  void startServer();
+}
+
+export default createApp();
