@@ -6,9 +6,9 @@ services:
     environment:
       POSTGRES_DB: merlin_db
       POSTGRES_USER: merlin_user
-      POSTGRES_PASSWORD: secure_password
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
     ports:
-      - '5432:5432'
+      - '127.0.0.1:5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./src/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
@@ -27,7 +27,7 @@ services:
       DB_PORT: 5432
       DB_NAME: merlin_db
       DB_USER: merlin_user
-      DB_PASSWORD: secure_password
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
     ports:
       - '3000:3000'
     depends_on:
