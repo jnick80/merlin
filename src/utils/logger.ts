@@ -10,7 +10,16 @@ const format = winston.format.combine(
   winston.format.errors({ stack: true }),
   winston.format.splat(),
   winston.format.printf(({ timestamp, level, message, stack, ...meta }) => {
-    const metadata = Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : '';
+    const replacer = (_key: string, value: unknown): unknown =>
+      value instanceof Error ? { name: value.name, message: value.message, stack: value.stack } : value;
+    let metadata = '';
+    if (Object.keys(meta).length > 0) {
+      try {
+        metadata = ` ${JSON.stringify(meta, replacer)}`;
+      } catch {
+        metadata = ' [unserializable metadata]';
+      }
+    }
     const errorStack = stack ? `\n${stack}` : '';
     return `${timestamp} ${level}: ${message}${metadata}${errorStack}`;
   })
